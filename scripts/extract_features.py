@@ -7,7 +7,9 @@
 import argparse, os, json
 import h5py
 import numpy as np
-from scipy.misc import imread, imresize
+#from scipy.misc import imread, imresize
+from imageio import imread
+from PIL import Image
 
 import torch
 import torchvision
@@ -18,8 +20,8 @@ parser.add_argument('--input_image_dir', required=True)
 parser.add_argument('--max_images', default=None, type=int)
 parser.add_argument('--output_h5_file', required=True)
 
-parser.add_argument('--image_height', default=224, type=int)
-parser.add_argument('--image_width', default=224, type=int)
+parser.add_argument('--image_height', default=64, type=int)
+parser.add_argument('--image_width', default=64, type=int)
 
 parser.add_argument('--model', default='resnet101')
 parser.add_argument('--model_stage', default=3, type=int)
@@ -86,8 +88,10 @@ def main(args):
     i0 = 0
     cur_batch = []
     for i, (path, idx) in enumerate(input_paths):
-      img = imread(path, mode='RGB')
-      img = imresize(img, img_size, interp='bicubic')
+      img = imread(path, pilmode='RGB')
+      img = np.array(Image.fromarray(img).resize((img_size), Image.BICUBIC))
+      #img = imread(path, mode='RGB')
+      #img = imresize(img, img_size, interp='bicubic')
       img = img.transpose(2, 0, 1)[None]
       cur_batch.append(img)
       if len(cur_batch) == args.batch_size:

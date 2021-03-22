@@ -182,7 +182,7 @@ class ModuleNet(nn.Module):
   def _forward_modules_ints_helper(self, feats, program, i, j):
     used_fn_j = True
     if j < program.size(1):
-      fn_idx = program.data[i, j]
+      fn_idx = program.data[i, j].item()
       fn_str = self.vocab['program_idx_to_token'][fn_idx]
     else:
       used_fn_j = False
@@ -233,6 +233,8 @@ class ModuleNet(nn.Module):
     if type(program) is list or type(program) is tuple:
       final_module_outputs = self._forward_modules_json(feats, program)
     elif type(program) is Variable and program.dim() == 2:
+      final_module_outputs = self._forward_modules_ints(feats, program)
+    elif type(program) is torch.Tensor and program.dim() == 2:
       final_module_outputs = self._forward_modules_ints(feats, program)
     else:
       raise ValueError('Unrecognized program format')

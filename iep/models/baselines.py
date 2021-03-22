@@ -33,6 +33,8 @@ class StackedAttention(nn.Module):
     Returns:
     - next_u: N x D
     """
+    #print("V: ", v.shape)
+    #print("U: ", u.shape)
     N, K = v.size(0), self.hidden_dim
     D, H, W = v.size(1), v.size(2), v.size(3)
     v_proj = self.Wv(v) # N x K x H x W
@@ -42,7 +44,9 @@ class StackedAttention(nn.Module):
     p = F.softmax(self.Wp(h).view(N, H * W)).view(N, 1, H, W)
     self.attention_maps = p.data.clone()
 
-    v_tilde = (p.expand_as(v) * v).sum(2).sum(3).view(N, D)
+    #print("P: ", p.shape)
+    #print("N: {} D: {}".format(N, D))
+    v_tilde = (p.expand_as(v) * v).sum(2, keepdim=True).sum(3, keepdim=True).view(N, D)
     next_u = u + v_tilde
     return next_u
 
@@ -181,9 +185,10 @@ class CnnLstmModel(nn.Module):
       'pooling': cnn_pooling,
     }
     self.cnn, (C, H, W) = build_cnn(**cnn_kwargs)
+    #print("C {} H {} W {}".format(C, H, W))
 
     classifier_kwargs = {
-      'input_dim': C * H * W + rnn_dim,
+      'input_dim': 2304, #C * H * W + rnn_dim, 
       'hidden_dims': fc_dims,
       'output_dim': len(vocab['answer_token_to_idx']),
       'use_batchnorm': fc_use_batchnorm,
@@ -194,9 +199,11 @@ class CnnLstmModel(nn.Module):
   def forward(self, questions, feats):
     N = questions.size(0)
     assert N == feats.size(0)
+    #print("FEATS: ", feats.size())
     q_feats = self.rnn(questions)
     img_feats = self.cnn(feats)
-    cat_feats = torch.cat([q_feats, img_feats.view(N, -1)], 1)
+    #print("Q FEATS:{} IMG FEATS:{}".format(q_feats.size(), img_feats.size()))
+    cat_feats = torch.cat([q_feats, img_feats.reshape(N, -1)], 1)
     scores = self.classifier(cat_feats)
     return scores
 

@@ -68,7 +68,7 @@ def main(args):
     print('Building vocab')
     if 'answer' in questions[0]:
       answer_token_to_idx = build_vocab(
-        (q['answer'] for q in questions)
+        (str(q['answer']) for q in questions)
       )
     question_token_to_idx = build_vocab(
       (q['question'] for q in questions),
@@ -139,7 +139,7 @@ def main(args):
       programs_encoded.append(program_encoded)
 
     if 'answer' in q:
-      answers.append(vocab['answer_token_to_idx'][q['answer']])
+      answers.append(vocab['answer_token_to_idx'][str(q['answer'])])
 
   # Pad encoded questions and programs
   max_question_length = max(len(x) for x in questions_encoded)

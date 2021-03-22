@@ -15,6 +15,7 @@ import random
 import shutil
 
 import torch
+print(torch.__version__)
 torch.backends.cudnn.enabled = True
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -99,7 +100,7 @@ parser.add_argument('--reward_decay', default=0.9, type=float)
 # Output options
 parser.add_argument('--checkpoint_path', default='data/checkpoint.pt')
 parser.add_argument('--randomize_checkpoint_path', type=int, default=0)
-parser.add_argument('--record_loss_every', type=int, default=1)
+parser.add_argument('--record_loss_every', type=int, default=100)
 parser.add_argument('--checkpoint_every', default=10000, type=int)
 
 
@@ -207,6 +208,7 @@ def train_loop(args, train_loader, val_loader):
     print('Starting epoch %d' % epoch)
     for batch in train_loader:
       t += 1
+      print("HIIIIIII")
       questions, _, feats, answers, programs, _ = batch
       questions_var = Variable(questions.cuda())
       feats_var = Variable(feats.cuda())
@@ -257,8 +259,8 @@ def train_loop(args, train_loader, val_loader):
           pg_optimizer.step()
 
       if t % args.record_loss_every == 0:
-        print(t, loss.data[0])
-        stats['train_losses'].append(loss.data[0])
+        print(t, loss.item())
+        stats['train_losses'].append(loss.item())
         stats['train_losses_ts'].append(t)
         if reward is not None:
           stats['train_rewards'].append(reward)

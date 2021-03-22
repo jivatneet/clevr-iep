@@ -26,6 +26,8 @@ import iep.programs
 from iep.data import ClevrDataset, ClevrDataLoader
 from iep.preprocess import tokenize, encode
 
+# image = 'img/CLEVR_val_000013.png'
+# question = 'Does the small sphere have the same color as the cube left of the gray cube?'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--program_generator', default=None)
@@ -84,7 +86,6 @@ def main(args):
     return
 
   if args.question is not None and args.image is not None:
-    print("SINGLE EG")
     run_single_example(args, model)
     # params = sum(p.numel() for p in model.parameters())
     # gen_params = sum(p.numel() for p in model[0].parameters())
@@ -133,6 +134,17 @@ def main(args):
     with ClevrDataLoader(**loader_kwargs) as loader:
       run_batch(args, model, loader)
 
+# model = None
+# pg_path = 'models/CLEVR/program_generator_18k.pt'
+# exec_eng_path = 'models/CLEVR/execution_engine_18k.pt'
+
+def run_pretrained_model(): 
+  print('Loading program genertator from ', pg_path)
+  print('Loading execution engine from ', exec_eng_path)
+  program_generator, _ = utils.load_program_generator(pg_path)
+  execution_engine, _ = utils.load_execution_engine(exec_eng_path)
+  model = (program_generator, execution_engine)
+ 
 
 def load_vocab(args):
   path = None
@@ -142,8 +154,6 @@ def load_vocab(args):
     path = args.program_generator
   elif args.execution_engine is not None:
     path = args.execution_engine
-  vocabs = utils.load_cpu(path)['vocab']
-  print(vocabs)
   return utils.load_cpu(path)['vocab']
 
 
@@ -188,8 +198,6 @@ def run_single_example(args, model):
   print('Running the model\n')
   scores = None
   predicted_program = None
-  print(model)
-  print(type(model))
   if type(model) is tuple:
     program_generator, execution_engine = model
     program_generator.type(dtype)
@@ -221,7 +229,6 @@ def run_single_example(args, model):
       print(fn_str)
       if num_inputs == 0:
         break
-
 
 def build_cnn(args, dtype):
   if not hasattr(torchvision.models, args.cnn_model):
@@ -336,7 +343,10 @@ def run_our_model_batch(args, program_generator, execution_engine, loader, dtype
       fout.create_dataset('probs', data=all_probs.numpy())
       fout.create_dataset('predicted_programs', data=all_programs.numpy())
 
+# run_pretrained_model()
+# run_single_example(args, model)
 
 if __name__ == '__main__':
   args = parser.parse_args()
   main(args)
+
