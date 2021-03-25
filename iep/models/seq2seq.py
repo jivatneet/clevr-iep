@@ -180,7 +180,7 @@ class Seq2Seq(nn.Module):
         #print("CUR OUT: ", cur_output.size())
         self.multinomial_outputs.append(cur_output)
       else:
-        cur_output = probs.multinomial(1) # Now N x 1
+        cur_output = torch.multinomial(probs, 1) # Now N x 1
         #m = Categorical(probs)
         #cur_output = m.sample()
         #print("M LOG PROB: ", m.log_prob(cur_output).size())
@@ -195,7 +195,7 @@ class Seq2Seq(nn.Module):
         #self.multinomial_outputs.append(cur_output)
         self.multinomial_outputs.append(torch.log(indices.squeeze(1)))
       self.multinomial_probs.append(probs)
-      print("CUR OUT: ", cur_output)
+      #print("CUR OUT: ", cur_output)
       cur_output_data = cur_output.data.cpu()
       #not_done = logical_not(done) #old
       not_done = np.where(done.data.cpu().numpy() == 0)
