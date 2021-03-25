@@ -44,7 +44,7 @@ parser.add_argument('--cleanup_local_copies', default=1, type=int)
 
 parser.add_argument('--family_split_file', default=None)
 parser.add_argument('--num_train_samples', default=None, type=int)
-parser.add_argument('--num_val_samples', default=10000, type=int)
+parser.add_argument('--num_val_samples', default=30000, type=int)
 parser.add_argument('--shuffle_train_data', default=1, type=int)
 
 # What type of model to use and which parts to train
@@ -208,7 +208,6 @@ def train_loop(args, train_loader, val_loader):
     print('Starting epoch %d' % epoch)
     for batch in train_loader:
       t += 1
-      print("HIIIIIII")
       questions, _, feats, answers, programs, _ = batch
       questions_var = Variable(questions.cuda())
       feats_var = Variable(feats.cuda())

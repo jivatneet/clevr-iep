@@ -48,6 +48,8 @@ def build_classifier(module_C, module_H, module_W, num_answers,
                      with_batchnorm=True, dropout=0):
   layers = []
   prev_dim = module_C * module_H * module_W
+  print("PREV DIM: ", prev_dim)
+  #prev_dim = 2048
   if proj_dim is not None and proj_dim > 0:
     layers.append(nn.Conv2d(module_C, proj_dim, kernel_size=1))
     if with_batchnorm:
@@ -88,7 +90,6 @@ class ModuleNet(nn.Module):
                verbose=True):
     super(ModuleNet, self).__init__()
 
-
     self.stem = build_stem(feature_dim[0], module_dim,
                            num_layers=stem_num_layers,
                            with_batchnorm=stem_batchnorm)
@@ -97,7 +98,8 @@ class ModuleNet(nn.Module):
       print(self.stem)
 
     num_answers = len(vocab['answer_idx_to_token'])
-    module_H, module_W = feature_dim[1], feature_dim[2]
+    #module_H, module_W = feature_dim[1], feature_dim[2]
+    module_H, module_W = 4, 4
     self.classifier = build_classifier(module_dim, module_H, module_W, num_answers,
                                        classifier_fc_layers,
                                        classifier_proj_dim,

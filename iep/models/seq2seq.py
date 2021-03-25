@@ -13,6 +13,7 @@ import torch.cuda
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from torch.distributions import Multinomial, Categorical
 
 from iep.embedding import expand_embedding_vocab
 
@@ -153,7 +154,8 @@ class Seq2Seq(nn.Module):
       cur_y = Variable(torch.LongTensor([y[-1]]).type_as(x.data).view(1, 1))
       logprobs, h0, c0 = self.decoder(encoded, cur_y, h0=h0, c0=c0)
       _, next_y = logprobs.data.max(2)
-      y.append(next_y[0, 0, 0])
+      #y.append(next_y[0, 0, 0])
+      y.append(next_y[0,0])
       if len(y) >= max_length or y[-1] == self.END:
         break
     return y
@@ -174,17 +176,48 @@ class Seq2Seq(nn.Module):
       probs = F.softmax(logprobs.view(N, -1), dim=None) # Now N x V
       if argmax:
         _, cur_output = probs.max(1)
-        cur_output = cur_output.unsqueeze(0)
+        cur_output = cur_output.unsqueeze(1)
+        #print("CUR OUT: ", cur_output.size())
+        self.multinomial_outputs.append(cur_output)
       else:
-        cur_output = probs.multinomial() # Now N x 1
-      self.multinomial_outputs.append(cur_output)
+        cur_output = probs.multinomial(1) # Now N x 1
+        #m = Categorical(probs)
+        #cur_output = m.sample()
+        #print("M LOG PROB: ", m.log_prob(cur_output).size())
+        #print("Cur out val: ", cur_output)
+        #print("CUR OUT: ", cur_output.size())
+        #print("PROBS: ", probs.size())
+        indices = probs.gather(0, cur_output)
+        #print("INDICES: ", indices)
+        #print("PROBS[CUR]: ", indices.size())
+
+        # reinforce deprecated
+        #self.multinomial_outputs.append(cur_output)
+        self.multinomial_outputs.append(torch.log(indices.squeeze(1)))
       self.multinomial_probs.append(probs)
+      print("CUR OUT: ", cur_output)
       cur_output_data = cur_output.data.cpu()
       #not_done = logical_not(done) #old
       not_done = np.where(done.data.cpu().numpy() == 0)
+      #print("NOT DONE: ", not_done)
+      #print("DONE SH: ", done.size())
       #y[:, t][not_done] = cur_output_data[not_done] #old
-      y[not_done,t] = cur_output_data[not_done]
-      done = logical_or(done, cur_output_data.cpu() == self.END)
+      cur_squeeze = cur_output_data.squeeze(1)
+      cur_not_done = cur_output_data[not_done]
+      #print("CUR OUT DATA: ", cur_not_done.size())
+      abc = cur_not_done.squeeze(1)
+      #print("ABC: ", abc.size())
+      
+      #ynd = y[not_done, t]
+      #print("Y: ", y.size())
+      #print("YND: ", ynd.size())
+      #ynd = y[:, t][not_done]
+      #print("YND2: ", ynd.size())
+      y[:, t][not_done] = abc
+      #y[not_done,t] = cur_output_data[not_done]
+      done = logical_or(done, cur_squeeze.cpu() == self.END)
+      #done = logical_or(done, cur_output_data.cpu() == self.END)
+      #print("DONE: ", done.size())
       cur_input = cur_output
       if done.sum() == N:
         break
@@ -208,10 +241,13 @@ class Seq2Seq(nn.Module):
         mask = Variable(output_mask[:, t])
         probs.register_hook(gen_hook(mask))
 
+    policy_loss = 0
     for sampled_output in self.multinomial_outputs:
-      sampled_output.reinforce(reward)
+      #sampled_output.reinforce(reward)
+      policy_loss -= (sampled_output * reward).sum()
       grad_output.append(None)
-    torch.autograd.backward(self.multinomial_outputs, grad_output, retain_variables=True)
+    #torch.autograd.backward(self.multinomial_outputs, grad_output, retain_variables=True)
+    policy_loss.backward()
 
 
 def logical_and(x, y):
