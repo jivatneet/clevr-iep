@@ -184,10 +184,11 @@ class Seq2Seq(nn.Module):
         #m = Categorical(probs)
         #cur_output = m.sample()
         #print("M LOG PROB: ", m.log_prob(cur_output).size())
+
         #print("Cur out val: ", cur_output)
         #print("CUR OUT: ", cur_output.size())
         #print("PROBS: ", probs.size())
-        indices = probs.gather(0, cur_output)
+        indices = torch.gather(probs, 1, cur_output)
         #print("INDICES: ", indices)
         #print("PROBS[CUR]: ", indices.size())
 
